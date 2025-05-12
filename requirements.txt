@@ -1,0 +1,7 @@
+gspread==5.12.0
+google-auth==2.29.0
+google-auth-oauthlib==1.2.0
+requests==2.31.0
+python-dotenv
+fastmcp==2.2.8
+uvicorn==0.29.0
