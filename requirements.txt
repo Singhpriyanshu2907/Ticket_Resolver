@@ -1,7 +1,19 @@
+# Google Sheets and OAuth
 gspread==5.12.0
 google-auth==2.29.0
 google-auth-oauthlib==1.2.0
-requests==2.31.0
+oauth2client==4.1.3
+
+# Environment variable support
 python-dotenv
+
+# HTTP Requests
+requests==2.31.0
+
+# Streamlit for UI
+streamlit==1.35.0
+
 fastmcp==2.2.8
+
+# ASGI Server (if you're serving an app)
 uvicorn==0.29.0
