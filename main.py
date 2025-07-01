@@ -1,14 +1,14 @@
-from src.classify_ticket import TicketClassifier
+from src.classify_ticket import classifier
 from src.custom_exception import CustomException
 
 if __name__ == "__main__":
     try:
-        classifier = TicketClassifier()
+        ticketclassifier = classifier()
 
-        issue_type = "Pain/Emergency"
-        description = "Severe toothache preventing sleep, swollen left cheek, unable to eat any food"
+        issue_type = "Marketing"
+        description = "Do you offer teeth whitening packages?"
 
-        priority = classifier.classify(issue_type, description)
+        priority = ticketclassifier.ticket_classifier(issue_type, description)
         print(f"Classified Priority: {priority}")
 
     except CustomException as e:

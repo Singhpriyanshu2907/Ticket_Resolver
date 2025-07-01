@@ -11,76 +11,62 @@ from euriai import EuriaiClient
 load_dotenv()
 logger = auto_logger(__name__)
 
-class TicketClassifier:
-    
-    
-    
+class classifier:
+
     def __init__(self):
-        try:
-            logger.info("Getting API credentials for EuriAPI")    
-            apikey = os.getenv("EURIAI_API_KEY")
-            model = os.getenv("EURIAI_MODEL", "gpt-4.1-mini")
+        self.client = EuriaiClient(
+        api_key=os.getenv("EURIAI_API_KEY"),
+        model="gpt-4.1-mini")
+    
+    def ticket_classifier(self,issue,description):
+        Prompt = f"""
+You are a dental practice ticket classification expert. 
+Analyze this ticket and classify its priority based on these STRICT RULES:
 
-            self.client = EuriaiClient(api_key=apikey, model=model)
-            self.valid_priorities = {"High", "Medium", "Low"}
-        
-        except Exception as e:
-            logger.error("Getting error while getting Euriapi creds")
-            raise CustomException(e,sys)
-    
-    
-    
-    
-    
-    
-    def classify(self, issue_type: str, description: str) -> Literal["High", "Medium", "Low"]:
-        try:
-            logger.info("Starting ticket classification")
-            prompt = f"""
-You are a triage assistant for dental support tickets.
+**Priority Framework:**
+1. HIGH (Respond within 1 hour):
+   - Emergency dental situations (severe pain, swelling, trauma)
+   - Life-threatening medication reactions
+   - Immediate post-operative complications
 
-Classify the ticket as **High**, **Medium**, or **Low** priority based on the urgency and impact described. Consider both the *Issue Type* and *Description* carefully.
+2. MEDIUM (Respond within 4 hours):
+   - Appointment rescheduling requests
+   - Appointment cancellation requests
+   - Billing/payment disputes
+   - Lab case follow-ups
+   - Medication refill requests
+   - Referral processing
+   - Complaint resolution
 
-**Guidelines:**
-- High: Immediate risk to patient care, severe pain, broken equipment, or urgent operational failure.
-- Medium: Impacts workflow but not urgent or critical (e.g. software glitch, scheduling issue).
-- Low: General inquiries, minor inconveniences, or non-urgent requests.
+3. LOW (Respond within 24 hours):
+   - General inquiries about services
+   - Marketing/sales questions
+   - Non-urgent cancellations
+   - Insurance verification requests
+   - Routine prescription questions
 
-**Issue Type:** {issue_type}
-**Description:** {description}
+**Special Considerations for Dental Cases:**
+- Prioritize pain-related issues higher when swelling or infection is mentioned
+- Elevate priority if patient mentions bleeding or trauma
+- Payment issues become Medium priority when affecting treatment continuation
 
-Respond ONLY with one word: High, Medium, or Low.
+**Ticket Details:**
+Issue Type: {issue}
+Description: {description}
+
+**Classification Rules:**
+1. First determine if this matches any HIGH priority scenarios
+2. If not, check against MEDIUM criteria
+3. Default to LOW only if clearly non-urgent
+
+**Output Format:**
+Respond with EXACTLY one word in uppercase: HIGH, MEDIUM, or LOW
 """
+        response = self.client.generate_completion(
+            prompt = Prompt,
+            temperature = 0.2,
+            max_tokens = 20
+        )
 
-            response = self.client.generate_completion(
-                prompt=prompt,
-                temperature=0.2,
-                max_tokens=10
-            )
+        return response['choices'][0]['message']['content']
 
-            # Extract 'completion' string from response dict
-            priority_text = response.get("completion", "")
-            priority = self._sanitize_priority(priority_text.strip())
-
-            logger.info(f"Classified as {priority} priority")
-            return priority
-
-        except Exception as e:
-            logger.error(f"Classification failed: {str(e)}")
-            raise CustomException(e,sys)
-
-
-    def _sanitize_priority(self, raw_priority: str) -> Literal["High", "Medium", "Low"]:
-        words = raw_priority.split()
-        
-        if not words:
-            logger.warning("Empty priority received. Defaulting to Medium")
-            return "Medium"
-
-        clean = words[0].strip().capitalize()
-
-        if clean not in self.valid_priorities:
-            logger.warning(f"Invalid priority '{raw_priority}', defaulting to Medium")
-            return "Medium"
-
-        return clean
