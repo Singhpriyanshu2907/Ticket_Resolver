@@ -1,4 +1,14 @@
 import streamlit as st
+from src.classify_ticket import classifier
+from src.sheet_connector import Gsheetupdater
+from src.generate_reply import ReplyGenerator
+from src.gmail_sender import Emailreply
+from src.custom_exception import CustomException
+
+ticketclassifier = classifier()
+sheetupdater = Gsheetupdater()
+replygenrator = ReplyGenerator()
+emailsender = Emailreply()
 
 st.set_page_config(
     page_title="Submit a Support Ticket",
@@ -86,50 +96,32 @@ with st.form("ticket_form", clear_on_submit=True):
             st.error("Please fill all required fields (*)")
         elif "@" not in email or "." not in email:
             st.error("Please enter a valid email address")
-        elif len(contact) > 10 or len(contact) < 10:
+        elif len(contact) != 10:
             st.error("Please enter a valid 10-digit contact number")
         elif len(message) > 500:
             st.error("Description exceeds 500 characters")
         else:
             # Success animation
             with st.spinner("Submitting your ticket..."):
-                # Here you would add your submission logic
-                st.success("Ticket submitted successfully! A confirmation has been sent to your email.")
+                ticket_id = (f"CAP-{hash(name+email)%100000:05d}")
+                Priority = ticketclassifier.ticket_classifier(issue_type,message)
+                sheetupdater.append_ticket(ticket_id,name,email,contact,office,issue_type,message,Priority)
+                row_number = sheetupdater.rownumber()
+                reply = replygenrator.generate_reply(issue_type,message,name)
+                sheetupdater.update_ticket(row_number,10,reply)
+                subject = (f"{issue_type} issue faced at {office} office")
+                emailsender.email_sender(email,subject,reply)
+                sheetupdater.update_ticket(row_number,11,reply="Email sent")
+                
+                
+                st.success("Ticket submitted successfully! You will shortly recieve a confirmation on your email.")
                 
                 # Confirmation message (would be replaced with actual data)
                 with st.expander("Ticket Summary", expanded=True):
-                    st.write(f"**Ticket ID:** CAP-{hash(name+email)%100000:05d}")
+                    st.write(f"**Ticket ID:**{ticket_id}")
                     st.write(f"**Patient:** {name}")
                     st.write(f"**Issue Type:** {issue_type}")
                     st.markdown("**Our Commitment:**")
                     st.markdown("- Emergency: Response within 1 hour")
                     st.markdown("- Urgent: Response within 4 hours")
                     st.markdown("- Routine: Response within 24 hours")
-
-
-
-
-
-# import streamlit as st
-
-# st.set_page_config(page_title="Submit a Support Ticket", page_icon="📩")
-
-# st.title("📩 Submit a Support Ticket")
-# st.markdown("We'll get back to you shortly with a helpful response.")
-
-# with st.form("ticket_form"):
-#     name = st.text_input("Full Name")
-#     email = st.text_input("Email Address")
-#     contact = st.text_input("Contact No.")
-#     Office = st.selectbox("Office Location",["Aransas","Azle","Beaumont","Benbrook","Crosby","Calallen","Devine","Elgin","Grangerland","Ganado","Huffman","Jasper","Lavaca","Liberty","Lytle","Mathis","Potranco","Riverwalk","Rockdale","Rio Bravo","Splendora","Springtown","Sinton","Tidwell","Victoria","Westgreen","Winnie"])
-#     issue_type = st.selectbox("Issue Type", ["Inquiry", "Emergency", "Appointment/Rescheduling", "Payment", "Billing", "Complaint", "Medication/RX/Request/Question", "Marketing/Sales", "Refund", "Referrals", "Cancellation"])
-#     message = st.text_area("Describe your issue", height=200)
-
-#     submitted = st.form_submit_button("Submit Ticket")
-
-#     # if submitted:
-#     #     if not name or not email or not message:
-#     #         st.error("Please fill in all required fields.")
-#     #     else:
-#     #         append_ticket_to_sheet(name, email, issue_type, message)
-#     #         st.success("✅ Your ticket has been submitted successfully!")

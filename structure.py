@@ -14,7 +14,6 @@ list_of_files = [
     "src/custom_exception.py",
     ".env",
     "main.py",
-    "mcp_server.py",
     "register_ticket",
     "notebook/experiments.ipynb",
     "requirements.txt",
